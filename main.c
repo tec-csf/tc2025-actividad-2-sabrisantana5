@@ -10,9 +10,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define N 10
-#define L 3
-
 typedef struct{
     char * titulo;
     int paginas;
@@ -21,6 +18,9 @@ typedef struct{
 typedef int (*t_compare)(void *, void *);
 typedef void (*t_type)(void *);
 typedef void (* recorre_t)(void *, size_t, size_t,t_type);
+
+//MENU
+typedef void (* menu)(void *,size_t , size_t, t_type);
 
 void printInt(void *);
 void printLibro(void *);
@@ -37,47 +37,72 @@ void * prev(void * vector,void * actual,size_t count, size_t size);
 
 int main(int argc, const char * argv[])
 {
-    //Crear números enteros random
-    int * enteros = (int *) malloc(N * sizeof(int));
+    //Menu para elegir iterador
+    int opc = -1;
+    menu * opcs = (menu *) malloc(sizeof(menu)*3);
+
+    *opcs = forwardIterator;
+    *(opcs+1) = reverseIterator;
+    *(opcs+2) = bidirectionalIterator;
+
+    //Pedir cantidad de elementos al usuario
+    int cantidad = 0;
+    printf("¿Cuántos elementos deseas que tenga cada arreglo? : ");
+    scanf("%d", &cantidad);
+
+    //Crear arreglo de enteros random
+    int * enteros = (int *) malloc(cantidad * sizeof(int));
 
     int * aux = enteros;
-    int * last = enteros + N;
+    int * last = enteros + cantidad;
     for (; aux < last; ++aux) {
         *aux = rand() % 100;
     }
     aux = enteros;
-    last = enteros + N;
+    last = enteros + cantidad;
+    printf("\nElementos de arreglo de enteros: \n\n");
     for (; aux < last; ++aux) {
         printf(" %4d ", *aux);
     }
 
-    printf("\nRecorriendo un arreglo de números enteros utilizando un Forward Iterator.\n");
-    recorre(enteros, &forwardIterator, N,sizeof(*enteros), &printInt);
-
-    printf("\nRecorriendo un arreglo de números enteros utilizando un Reverse Iterator.\n");
-    recorre(enteros, &reverseIterator, N,sizeof(*enteros), &printInt);
-
-
-    //Crear números enteros random arreglo de libros
-    libro * libros = (libro *) malloc(sizeof(libro)*L);
-
-    libros -> titulo  = (char *) malloc(sizeof(char)*25);
-    strcpy(libros -> titulo , "Percy Jackson");
-    libros -> paginas = 100;
-    (libros + 1 )-> titulo  = (char *) malloc(sizeof(char)*25);
-    strcpy((libros + 1 )-> titulo , "Ready player one");
-    (libros + 1 )-> paginas = 200;
-    (libros + 2 )-> titulo  = (char *) malloc(sizeof(char)*25);
-    strcpy((libros + 2 )-> titulo , "Maze runner");
-    (libros + 2 )-> paginas = 300;
-
-    printf("\nRecorriendo un arreglo de estructuras del tipo Libro, utilizando un Bidirectional Iterator.\n");
-    recorre(libros, &bidirectionalIterator, L ,sizeof(*libros), &printLibro);
-
-    printf("\n\n");
+    //Crear arreglo de libros random
+    libro * libros = (libro *) malloc(sizeof(libro)*cantidad);
 
     libro * aux1 = libros;
-    libro * final = libros + L;
+    libro * final = libros + cantidad;
+    int i = 0;
+    while(aux1 < final) {
+        (libros + i )-> titulo  = (char *) malloc(sizeof(char)*25);
+        strcpy((libros + i)-> titulo , "Libro genérico");
+        (libros + i )-> paginas = rand() % 100;
+        ++aux1;
+        ++i;
+    }
+    printf("\n\nElementos de arreglo de libros: \n\n");
+    aux1 = libros;
+    for (; aux1 < final; ++aux1) {
+        printf(" %4s ",aux1->titulo);
+        printf(" %4d ",aux1->paginas);
+    }
+
+    //Pedir iterador
+    while (opc != 0) {
+        printf("\n\n¿Qué iterador deseas usar? \n 1.ForwardIterator 2.ReverseIterator 3.BidirectionalIterator 0. Salir\n\n");
+        printf("Seleccione una opción: ");
+        scanf("%d", &opc);
+
+        //Llamada a recorre dependiendo de la elección del usuario
+        if (opc > 0 && opc <= 3) {
+            printf("\n\nRecorriendo arreglo de números enteros.\n\n");
+            recorre(enteros, &(*(opcs[opc-1])), cantidad, sizeof(*enteros), &printInt);
+            printf("\n\nRecorriendo arreglo de estructuras del tipo Libro\n\n");
+            recorre(libros, &(*(opcs[opc-1])), cantidad ,sizeof(*libros), &printLibro);
+        }
+    }
+    printf("\n\n");
+
+    //Liberar memoria
+    aux1 = libros;
     for (; aux1 < final; ++aux1) {
         free(aux1-> titulo);
     }
@@ -91,7 +116,7 @@ void recorre(void * arreglo, recorre_t iterador,size_t count, size_t size, t_typ
     //Debe recorrer el arreglo utilizando el iterador especificado y mostrar el contenido del arreglo.
     (* iterador)(arreglo, count, size,print_type);
 }
-
+//Iterador normal
 void forwardIterator(void * arreglo, size_t count, size_t size,  t_type print_type){
     void * iteratorbegin = begin(arreglo);
 
@@ -101,6 +126,7 @@ void forwardIterator(void * arreglo, size_t count, size_t size,  t_type print_ty
     }
 
 }
+//Iterador de reversa
 void reverseIterator(void * arreglo, size_t count, size_t size,  t_type print_type){
     void * iteratorbegin = end(arreglo,count,size) - size;
 
@@ -109,6 +135,7 @@ void reverseIterator(void * arreglo, size_t count, size_t size,  t_type print_ty
         iteratorbegin = prev(arreglo,iteratorbegin,count,size);
     }
 }
+//Iterador bidireccional
 void bidirectionalIterator(void * arreglo, size_t count, size_t size, t_type print_type){
     void * iteratorbegin = begin(arreglo);
 
@@ -117,7 +144,7 @@ void bidirectionalIterator(void * arreglo, size_t count, size_t size, t_type pri
         iteratorbegin = next(arreglo,iteratorbegin,count,size);
     }
 
-    printf("\nOther direction\n");
+    printf("\n\n");
     iteratorbegin = end(arreglo,count,size) - size;
 
     while(iteratorbegin != NULL){
@@ -125,7 +152,6 @@ void bidirectionalIterator(void * arreglo, size_t count, size_t size, t_type pri
         iteratorbegin = prev(arreglo,iteratorbegin,count,size);
     }
 }
-
 //Apuntador al primer elemento
 void * begin(void * vector){
     return vector;
@@ -150,12 +176,13 @@ void * prev(void * vector,void * actual, size_t count, size_t size){
         return actual - size;
     }
 }
-
+//Imprimir enteros
 void printInt(void * pa)
 {
     int * a = (int *)pa;
     printf(" %4d ",*a);
 }
+//Imprimir libros
 void printLibro(void * pa)
 {
     libro * a = (libro *)pa;
