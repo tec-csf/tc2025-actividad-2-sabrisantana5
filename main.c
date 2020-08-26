@@ -2,8 +2,8 @@
 //  main.c
 //  Actividad 2
 //  Recorrer un arreglo de cualquier tipo de datos utilizando diferentes tipos de iteradores
-//  Created by Sab on 8/24/20.
-//  Copyright © 2020 Sab. All rights reserved.
+//  Created by Sabrina Lizette Santana Lazos on 8/24/20.
+//  Copyright © 2020 Sabrina Lizette Santana LAZOS. All rights reserved.
 //
 
 #include <stdio.h>
@@ -15,25 +15,29 @@ typedef struct{
     int paginas;
 } libro;
 
+//Tipos de funciones
 typedef int (*t_compare)(void *, void *);
 typedef void (*t_type)(void *);
 typedef void (* recorre_t)(void *, size_t, size_t,t_type);
-
-//MENU
 typedef void (* menu)(void *,size_t , size_t, t_type);
+typedef void * (* it_type)(void * ,void *, size_t , size_t );
 
-void printInt(void *);
-void printLibro(void *);
-
+//Funciones genéricas
 void recorre(void *, recorre_t ,size_t , size_t, t_type);
 void forwardIterator(void * arreglo, size_t count, size_t size, t_type);
 void reverseIterator(void * arreglo, size_t count, size_t size, t_type);
 void bidirectionalIterator(void * arreglo, size_t count, size_t size, t_type);
 
+//Funciones callback para iteradores
 void * begin(void * vector);
 void * end(void * vector, size_t count, size_t size);
 void * next(void * vector,void * actual, size_t count, size_t size);
 void * prev(void * vector,void * actual,size_t count, size_t size);
+
+//Funciones de impresión
+void printInt(void *);
+void printLibro(void *);
+void printArray(t_type , it_type ,void * , void* , size_t , size_t );
 
 int main(int argc, const char * argv[])
 {
@@ -82,7 +86,7 @@ int main(int argc, const char * argv[])
     aux1 = libros;
     for (; aux1 < final; ++aux1) {
         printf(" %4s ",aux1->titulo);
-        printf(" %4d ",aux1->paginas);
+        printf("Págs: %4d ",aux1->paginas);
     }
 
     //Pedir iterador
@@ -91,7 +95,7 @@ int main(int argc, const char * argv[])
         printf("Seleccione una opción: ");
         scanf("%d", &opc);
 
-        //Llamada a recorre dependiendo de la elección del usuario
+        //Llamada a recorre dependiendo de la elección de iterador del usuario
         if (opc > 0 && opc <= 3) {
             printf("\n\nRecorriendo arreglo de números enteros.\n\n");
             recorre(enteros, &(*(opcs[opc-1])), cantidad, sizeof(*enteros), &printInt);
@@ -111,46 +115,32 @@ int main(int argc, const char * argv[])
     return 0;
 }
 
-//Funciones genéricas
+//Implementación de funnciones genéricas
 void recorre(void * arreglo, recorre_t iterador,size_t count, size_t size, t_type print_type){
-    //Debe recorrer el arreglo utilizando el iterador especificado y mostrar el contenido del arreglo.
+    //Recorre el arreglo utilizando el iterador especificado y muestra el contenido del arreglo.
     (* iterador)(arreglo, count, size,print_type);
 }
-//Iterador normal
+//Iterador hacia adelante
 void forwardIterator(void * arreglo, size_t count, size_t size,  t_type print_type){
     void * iteratorbegin = begin(arreglo);
-
-    while(iteratorbegin != NULL){
-        (*print_type)(iteratorbegin);
-        iteratorbegin = next(arreglo,iteratorbegin,count,size);
-    }
+    printArray(print_type, &next ,arreglo, iteratorbegin, count,size);
 
 }
 //Iterador de reversa
 void reverseIterator(void * arreglo, size_t count, size_t size,  t_type print_type){
     void * iteratorbegin = end(arreglo,count,size) - size;
-
-    while(iteratorbegin != NULL){
-        (*print_type)(iteratorbegin);
-        iteratorbegin = prev(arreglo,iteratorbegin,count,size);
-    }
+    printArray(print_type, &prev ,arreglo, iteratorbegin, count,size);
 }
 //Iterador bidireccional
 void bidirectionalIterator(void * arreglo, size_t count, size_t size, t_type print_type){
     void * iteratorbegin = begin(arreglo);
 
-    while(iteratorbegin != NULL){
-        (*print_type)(iteratorbegin);
-        iteratorbegin = next(arreglo,iteratorbegin,count,size);
-    }
+    printArray(print_type, &next ,arreglo, iteratorbegin, count,size);
 
     printf("\n\n");
     iteratorbegin = end(arreglo,count,size) - size;
 
-    while(iteratorbegin != NULL){
-        (*print_type)(iteratorbegin);
-        iteratorbegin = prev(arreglo,iteratorbegin,count,size);
-    }
+    printArray(print_type, &prev ,arreglo, iteratorbegin, count,size);
 }
 //Apuntador al primer elemento
 void * begin(void * vector){
@@ -187,5 +177,13 @@ void printLibro(void * pa)
 {
     libro * a = (libro *)pa;
     printf(" %4s ",a->titulo);
-    printf(" %4d ",a->paginas);
+    printf("Págs: %4d ",a->paginas);
+}
+//Imprimir arreglo
+void printArray(t_type print_type, it_type it_type ,void * arreglo, void* ib, size_t count, size_t size )
+{
+    while(ib != NULL){
+        (*print_type)(ib);
+        ib = (*it_type)(arreglo,ib,count,size);
+    }
 }
